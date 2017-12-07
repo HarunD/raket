@@ -1,0 +1,51 @@
+{
+  "name": "raket",
+  "version": "0.0.92",
+  "description": "React component to handle native Javascript websocket.",
+  "main": "build/index.js",
+  "author": "Harun Djulic <harundulic@gmail.com>",
+  "keywords": [
+    "react",
+    "websocket"
+  ],
+  "homepage": "https://github.com/HarunD/raket",
+  "bugs": "https://github.com/HarunD/raket/issues",
+  "repository": {
+    "url": "https://github.com/HarunD/raket",
+    "type": "git"
+  },
+  "license": "MIT",
+  "files": [
+    "build"
+  ],
+  "scripts": {
+    "test": "jest",
+    "build": "webpack"
+  },
+  "jest": {
+    "transform": {
+      "^.+\\.js$": "<rootDir>/node_modules/babel-jest"
+    },
+    "setupFiles": [
+      "./src/setupTests.js"
+    ]
+  },
+  "dependencies": {
+    "react": "^16.1.1"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-core": "^6.26.0",
+    "babel-jest": "^21.2.0",
+    "babel-loader": "^7.1.2",
+    "babel-preset-es2015": "^6.24.1",
+    "babel-preset-react": "^6.24.1",
+    "enzyme": "^3.2.0",
+    "enzyme-adapter-react-16": "^1.1.0",
+    "jest": "^21.2.1",
+    "jest-cli": "^21.2.1",
+    "mock-socket": "^7.1.0",
+    "react-dom": "^16.1.1",
+    "webpack": "^3.8.1"
+  }
+}
