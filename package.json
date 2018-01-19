@@ -1,6 +1,6 @@
 {
   "name": "raket",
-  "version": "0.0.95",
+  "version": "1.0.0",
   "description": "React component to handle native Javascript websocket.",
   "main": "build/index.js",
   "author": "Harun Djulic <harundulic@gmail.com>",
