@@ -1,21 +1,17 @@
 import React, {Component} from 'react';
 import PropTypes from 'prop-types';
 
-class Raket extends Component {
-    constructor(props) {
-        super(props);
-
-        this.state = {
-            isConnected: false,
-            WS: null
-        };
-
-        this.timeoutInterval = 1000;
-
-        this.close = this
-            .close
-            .bind(this);
-    }
+export default class Raket extends Component {
+    state = {
+        status: 'closed',
+        WS: null
+    };
+    timeoutInterval = 1000;
+    statusColors = this.props.statusColors || {
+        closed: 'grey',
+        open: 'green',
+        error: 'red'
+    };
 
     componentDidMount() {
         this.setup();
@@ -25,13 +21,19 @@ class Raket extends Component {
         this.close();
     }
 
-    log(message) {
+    componentWillUpdate(nextProps) {
+        if (nextProps.url !== this.props.url) {
+            this.setup();
+        }
+    }
+
+    log = message => {
         if (this.props.shouldLog) {
             console.log(`Raket | at :  ${new Date().toLocaleTimeString()} | ${message}`);
         }
     }
 
-    setup() {
+    setup = () => {
         this.setState({
             WS: new WebSocket(this.props.url)
         }, () => {
@@ -39,11 +41,12 @@ class Raket extends Component {
         });
     }
 
-    setupLifecycle() {
+    setupLifecycle = () => {
         let WS = this.state.WS;
 
         WS.onopen = () => {
             this.log("WebSocket opening");
+            this.setState({status: 'open'});
             this
                 .props
                 .onEvent({type: 'open'});
@@ -51,6 +54,7 @@ class Raket extends Component {
 
         WS.onclose = (closer) => {
             this.log("WebSocket closing");
+            this.setState({status: 'closed'});
             this
                 .props
                 .onEvent({type: 'close'});
@@ -80,7 +84,7 @@ class Raket extends Component {
         };
     }
 
-    close() {
+    close = () => {
         let WS = this.state.WS;
         if (WS) {
             WS.close();
@@ -90,10 +94,10 @@ class Raket extends Component {
         }
 
         this.timeoutInterval = 1000;
-        this.setState({isConnected: false, WS: null});
+        this.setState({status: 'closed', WS: null});
     }
 
-    tryToReconnect(closeReason) {
+    tryToReconnect = closeReason => {
         this.timeoutInterval = (this.timeoutInterval !== 16000)
             ? this.timeoutInterval * 2
             : this.timeoutInterval;
@@ -105,14 +109,40 @@ class Raket extends Component {
         }, this.timeoutInterval);
     }
 
+    renderIndicatorIcon = () => {
+        let {status} = this.state;
+
+        return (
+            <div
+                className={`RaketIndicator --status-${status} ${this.props.className}`}
+                style={this.props.style || {
+                backgroundColor: this.statusColors[status],
+                borderRadius: '50%',
+                bottom: '20px',
+                height: '30px',
+                left: '20px',
+                position: 'absolute',
+                width: '30px'
+            }}></div>
+        );
+    }
+
     render() {
-        return '';
+        if (!this.props.showIndicator) {
+            return '';
+        }
+
+        return this.renderIndicatorIcon();
     }
 }
 
 Raket.defaultProps = {
+    className: '',
     shouldLog: false,
-    shouldReconnect: false
+    shouldReconnect: false,
+    showIndicator: false,
+    statusColors: null,
+    style: null
 };
 
 Raket.PropTypes = {
@@ -121,5 +151,3 @@ Raket.PropTypes = {
     shouldReconnect: PropTypes.bool,
     onEvent: PropTypes.func.isRequired
 };
-
-export default Raket;

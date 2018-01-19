@@ -476,20 +476,77 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 var Raket = function (_Component) {
     _inherits(Raket, _Component);
 
-    function Raket(props) {
+    function Raket() {
+        var _ref;
+
+        var _temp, _this, _ret;
+
         _classCallCheck(this, Raket);
 
-        var _this = _possibleConstructorReturn(this, (Raket.__proto__ || Object.getPrototypeOf(Raket)).call(this, props));
+        for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+            args[_key] = arguments[_key];
+        }
 
-        _this.state = {
+        return _ret = (_temp = (_this = _possibleConstructorReturn(this, (_ref = Raket.__proto__ || Object.getPrototypeOf(Raket)).call.apply(_ref, [this].concat(args))), _this), _this.state = {
             isConnected: false,
             WS: null
-        };
+        }, _this.timeoutInterval = 1000, _this.setup = function () {
+            _this.setState({
+                WS: new WebSocket(_this.props.url)
+            }, function () {
+                _this.setupLifecycle();
+            });
+        }, _this.setupLifecycle = function () {
+            var WS = _this.state.WS;
 
-        _this.timeoutInterval = 1000;
+            WS.onopen = function () {
+                _this.log("WebSocket opening");
+                _this.props.onEvent({ type: 'open' });
+            };
 
-        _this.close = _this.close.bind(_this);
-        return _this;
+            WS.onclose = function (closer) {
+                _this.log("WebSocket closing");
+                _this.props.onEvent({ type: 'close' });
+
+                if (!_this.state.WS) {
+                    // Closed manually
+                    return;
+                }
+
+                if (_this.props.shouldReconnect) {
+                    _this.tryToReconnect(closer.reason);
+                }
+            };
+
+            WS.onmessage = function (message) {
+                _this.log("WebSocket got message : " + message);
+                _this.props.onEvent({ type: 'open', payload: message });
+            };
+
+            WS.onerror = function (error) {
+                _this.log("WebSocket has error : " + error);
+                _this.props.onEvent({ type: 'open', payload: error });
+            };
+        }, _this.close = function () {
+            var WS = _this.state.WS;
+            if (WS) {
+                WS.close();
+            }
+            if (_this.TIMEOUT_ID) {
+                clearTimeout(_this.TIMEOUT_ID);
+            }
+
+            _this.timeoutInterval = 1000;
+            _this.setState({ isConnected: false, WS: null });
+        }, _this.tryToReconnect = function (closeReason) {
+            _this.timeoutInterval = _this.timeoutInterval !== 16000 ? _this.timeoutInterval * 2 : _this.timeoutInterval;
+
+            _this.log('Websocket connection closed (' + closeReason + '). Reopening the connection in ' + _this.timeoutInterval / 1000 + ' seconds ...');
+
+            _this.TIMEOUT_ID = setTimeout(function () {
+                _this.setup();
+            }, _this.timeoutInterval);
+        }, _temp), _possibleConstructorReturn(_this, _ret);
     }
 
     _createClass(Raket, [{
@@ -502,6 +559,9 @@ var Raket = function (_Component) {
         value: function componentWillUnmount() {
             this.close();
         }
+
+        // TODO: do the setup again after the URL has been changed
+
     }, {
         key: 'log',
         value: function log(message) {
@@ -510,83 +570,15 @@ var Raket = function (_Component) {
             }
         }
     }, {
-        key: 'setup',
-        value: function setup() {
-            var _this2 = this;
-
-            this.setState({
-                WS: new WebSocket(this.props.url)
-            }, function () {
-                _this2.setupLifecycle();
-            });
-        }
-    }, {
-        key: 'setupLifecycle',
-        value: function setupLifecycle() {
-            var _this3 = this;
-
-            var WS = this.state.WS;
-
-            WS.onopen = function () {
-                _this3.log("WebSocket opening");
-                _this3.props.onEvent({ type: 'open' });
-            };
-
-            WS.onclose = function (closer) {
-                _this3.log("WebSocket closing");
-                _this3.props.onEvent({ type: 'close' });
-
-                if (!_this3.state.WS) {
-                    // Closed manually
-                    return;
-                }
-
-                if (_this3.props.shouldReconnect) {
-                    _this3.tryToReconnect(closer.reason);
-                }
-            };
-
-            WS.onmessage = function (message) {
-                _this3.log("WebSocket got message : " + message);
-                _this3.props.onEvent({ type: 'open', payload: message });
-            };
-
-            WS.onerror = function (error) {
-                _this3.log("WebSocket has error : " + error);
-                _this3.props.onEvent({ type: 'open', payload: error });
-            };
-        }
-    }, {
-        key: 'close',
-        value: function close() {
-            var WS = this.state.WS;
-            if (WS) {
-                WS.close();
-            }
-            if (this.TIMEOUT_ID) {
-                clearTimeout(this.TIMEOUT_ID);
-            }
-
-            this.timeoutInterval = 1000;
-            this.setState({ isConnected: false, WS: null });
-        }
-    }, {
-        key: 'tryToReconnect',
-        value: function tryToReconnect(closeReason) {
-            var _this4 = this;
-
-            this.timeoutInterval = this.timeoutInterval !== 16000 ? this.timeoutInterval * 2 : this.timeoutInterval;
-
-            this.log('Websocket connection closed (' + closeReason + '). Reopening the connection in ' + this.timeoutInterval / 1000 + ' seconds ...');
-
-            this.TIMEOUT_ID = setTimeout(function () {
-                _this4.setup();
-            }, this.timeoutInterval);
-        }
-    }, {
         key: 'render',
         value: function render() {
-            return '';
+            if (!this.props.showIndicator) {
+                return '';
+            }_react2.default.createElement(
+                'div',
+                { className: 'RaketIndicator', style: indicatorStyle },
+                ' '
+            );
         }
     }]);
 
@@ -595,7 +587,8 @@ var Raket = function (_Component) {
 
 Raket.defaultProps = {
     shouldLog: false,
-    shouldReconnect: false
+    shouldReconnect: false,
+    showIndicator: false
 };
 
 Raket.PropTypes = {
@@ -603,6 +596,14 @@ Raket.PropTypes = {
     shouldLog: _propTypes2.default.bool,
     shouldReconnect: _propTypes2.default.bool,
     onEvent: _propTypes2.default.func.isRequired
+};
+
+var indicatorStyle = {
+    backgroundColor: 'grey',
+    borderRadius: '50%',
+    height: '20px',
+    position: 'absolute',
+    width: '20px'
 };
 
 exports.default = Raket;
