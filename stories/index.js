@@ -21,7 +21,7 @@ storiesOf('Raket', module).add('with default indicator', () => (
 
 storiesOf('Raket', module).add('with indicator and custom status colors', () => (
   <div>
-    <h1>Raket with default indicator</h1>
+    <h1>Raket with indicator and custom status colors</h1>
     <Raket
       showIndicator
       url={TEST_URL_VALID}
