@@ -122,6 +122,7 @@ export default class Raket extends Component {
                 height: '30px',
                 left: '20px',
                 position: 'absolute',
+                zIndex: '5000',
                 width: '30px'
             }}></div>
         );

@@ -488,9 +488,17 @@ var Raket = function (_Component) {
         }
 
         return _ret = (_temp = (_this = _possibleConstructorReturn(this, (_ref = Raket.__proto__ || Object.getPrototypeOf(Raket)).call.apply(_ref, [this].concat(args))), _this), _this.state = {
-            isConnected: false,
+            status: 'closed',
             WS: null
-        }, _this.timeoutInterval = 1000, _this.setup = function () {
+        }, _this.timeoutInterval = 1000, _this.statusColors = _this.props.statusColors || {
+            closed: 'grey',
+            open: 'green',
+            error: 'red'
+        }, _this.log = function (message) {
+            if (_this.props.shouldLog) {
+                console.log('Raket | at :  ' + new Date().toLocaleTimeString() + ' | ' + message);
+            }
+        }, _this.setup = function () {
             _this.setState({
                 WS: new WebSocket(_this.props.url)
             }, function () {
@@ -501,11 +509,13 @@ var Raket = function (_Component) {
 
             WS.onopen = function () {
                 _this.log("WebSocket opening");
+                _this.setState({ status: 'open' });
                 _this.props.onEvent({ type: 'open' });
             };
 
             WS.onclose = function (closer) {
                 _this.log("WebSocket closing");
+                _this.setState({ status: 'closed' });
                 _this.props.onEvent({ type: 'close' });
 
                 if (!_this.state.WS) {
@@ -537,7 +547,7 @@ var Raket = function (_Component) {
             }
 
             _this.timeoutInterval = 1000;
-            _this.setState({ isConnected: false, WS: null });
+            _this.setState({ status: 'closed', WS: null });
         }, _this.tryToReconnect = function (closeReason) {
             _this.timeoutInterval = _this.timeoutInterval !== 16000 ? _this.timeoutInterval * 2 : _this.timeoutInterval;
 
@@ -546,6 +556,22 @@ var Raket = function (_Component) {
             _this.TIMEOUT_ID = setTimeout(function () {
                 _this.setup();
             }, _this.timeoutInterval);
+        }, _this.renderIndicatorIcon = function () {
+            var status = _this.state.status;
+
+
+            return _react2.default.createElement('div', {
+                className: 'RaketIndicator --status-' + status + ' ' + _this.props.className,
+                style: _this.props.style || {
+                    backgroundColor: _this.statusColors[status],
+                    borderRadius: '50%',
+                    bottom: '20px',
+                    height: '30px',
+                    left: '20px',
+                    position: 'absolute',
+                    zIndex: '5000',
+                    width: '30px'
+                } });
         }, _temp), _possibleConstructorReturn(_this, _ret);
     }
 
@@ -559,14 +585,11 @@ var Raket = function (_Component) {
         value: function componentWillUnmount() {
             this.close();
         }
-
-        // TODO: do the setup again after the URL has been changed
-
     }, {
-        key: 'log',
-        value: function log(message) {
-            if (this.props.shouldLog) {
-                console.log('Raket | at :  ' + new Date().toLocaleTimeString() + ' | ' + message);
+        key: 'componentWillUpdate',
+        value: function componentWillUpdate(nextProps) {
+            if (nextProps.url !== this.props.url) {
+                this.setup();
             }
         }
     }, {
@@ -574,21 +597,25 @@ var Raket = function (_Component) {
         value: function render() {
             if (!this.props.showIndicator) {
                 return '';
-            }_react2.default.createElement(
-                'div',
-                { className: 'RaketIndicator', style: indicatorStyle },
-                ' '
-            );
+            }
+
+            return this.renderIndicatorIcon();
         }
     }]);
 
     return Raket;
 }(_react.Component);
 
+exports.default = Raket;
+
+
 Raket.defaultProps = {
+    className: '',
     shouldLog: false,
     shouldReconnect: false,
-    showIndicator: false
+    showIndicator: false,
+    statusColors: null,
+    style: null
 };
 
 Raket.PropTypes = {
@@ -597,16 +624,6 @@ Raket.PropTypes = {
     shouldReconnect: _propTypes2.default.bool,
     onEvent: _propTypes2.default.func.isRequired
 };
-
-var indicatorStyle = {
-    backgroundColor: 'grey',
-    borderRadius: '50%',
-    height: '20px',
-    position: 'absolute',
-    width: '20px'
-};
-
-exports.default = Raket;
 
 /***/ }),
 /* 6 */
