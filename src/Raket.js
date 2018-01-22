@@ -23,6 +23,7 @@ export default class Raket extends Component {
 
     componentWillUpdate(nextProps) {
         if (nextProps.url !== this.props.url) {
+            this.close();
             this.setup();
         }
     }
