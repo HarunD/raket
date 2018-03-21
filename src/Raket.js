@@ -53,9 +53,8 @@ export default class Raket extends Component {
                 .onEvent({type: 'open'});
         };
 
-        WS.onclose = (closer) => {
+        WS.onclose = closer => {
             this.log("WebSocket closing");
-            this.setState({status: 'closed'});
             this
                 .props
                 .onEvent({type: 'close'});
@@ -70,14 +69,14 @@ export default class Raket extends Component {
             }
         };
 
-        WS.onmessage = (message) => {
+        WS.onmessage = message => {
             this.log("WebSocket got message : " + message);
             this
                 .props
                 .onEvent({type: 'open', payload: message});
         };
 
-        WS.onerror = (error) => {
+        WS.onerror = error => {
             this.log("WebSocket has error : " + error);
             this
                 .props
@@ -88,6 +87,7 @@ export default class Raket extends Component {
     close = () => {
         let WS = this.state.WS;
         if (WS) {
+            WS.onclose = null;
             WS.close();
         }
         if (this.TIMEOUT_ID) {
@@ -147,7 +147,7 @@ Raket.defaultProps = {
     style: null
 };
 
-Raket.PropTypes = {
+Raket.propTypes = {
     url: PropTypes.string.isRequired,
     shouldLog: PropTypes.bool,
     shouldReconnect: PropTypes.bool,

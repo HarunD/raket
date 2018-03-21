@@ -515,7 +515,6 @@ var Raket = function (_Component) {
 
             WS.onclose = function (closer) {
                 _this.log("WebSocket closing");
-                _this.setState({ status: 'closed' });
                 _this.props.onEvent({ type: 'close' });
 
                 if (!_this.state.WS) {
@@ -540,6 +539,7 @@ var Raket = function (_Component) {
         }, _this.close = function () {
             var WS = _this.state.WS;
             if (WS) {
+                WS.onclose = null;
                 WS.close();
             }
             if (_this.TIMEOUT_ID) {
@@ -589,6 +589,7 @@ var Raket = function (_Component) {
         key: 'componentWillUpdate',
         value: function componentWillUpdate(nextProps) {
             if (nextProps.url !== this.props.url) {
+                this.close();
                 this.setup();
             }
         }
@@ -618,7 +619,7 @@ Raket.defaultProps = {
     style: null
 };
 
-Raket.PropTypes = {
+Raket.propTypes = {
     url: _propTypes2.default.string.isRequired,
     shouldLog: _propTypes2.default.bool,
     shouldReconnect: _propTypes2.default.bool,
