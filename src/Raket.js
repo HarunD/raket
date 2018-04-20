@@ -14,7 +14,7 @@ export default class Raket extends Component {
     };
 
     componentDidMount() {
-        this.setup();
+        this.setup(this.props.url);
     }
 
     componentWillUnmount() {
@@ -23,20 +23,22 @@ export default class Raket extends Component {
 
     componentWillUpdate(nextProps) {
         if (nextProps.url !== this.props.url) {
+            this.log('URL Changed');
             this.close();
-            this.setup();
+            this.setup(nextProps.url);
         }
     }
 
     log = message => {
         if (this.props.shouldLog) {
-            console.log(`Raket | at :  ${new Date().toLocaleTimeString()} | ${message}`);
+            console.log(`Raket | at :  ${new Date().toLocaleTimeString()} | ${JSON.stringify(message)}`);
         }
     }
 
-    setup = () => {
+    setup = url => {
+        this.log('Setting up');
         this.setState({
-            WS: new WebSocket(this.props.url)
+            WS: new WebSocket(url)
         }, () => {
             this.setupLifecycle();
         });
@@ -46,7 +48,7 @@ export default class Raket extends Component {
         let WS = this.state.WS;
 
         WS.onopen = () => {
-            this.log("WebSocket opening");
+            this.log('WebSocket opening');
             this.setState({status: 'open'});
             this
                 .props
@@ -54,30 +56,32 @@ export default class Raket extends Component {
         };
 
         WS.onclose = closer => {
-            this.log("WebSocket closing");
+            this.log(`WebSocket closing ${JSON.stringify(closer)}`);
             this
                 .props
                 .onEvent({type: 'close'});
 
             if (!this.state.WS) {
                 // Closed manually
+                this.log('WebSocket closed manually');
                 return;
             }
 
             if (this.props.shouldReconnect) {
+                this.log('WebSocket trying to reconnect');
                 this.tryToReconnect(closer.reason);
             }
         };
 
         WS.onmessage = message => {
-            this.log("WebSocket got message : " + message);
+            this.log(`WebSocket got message : ${JSON.stringify(message)}`);
             this
                 .props
                 .onEvent({type: 'open', payload: message});
         };
 
         WS.onerror = error => {
-            this.log("WebSocket has error : " + error);
+            this.log(`WebSocket has error : ${JSON.stringify(error)}`);
             this
                 .props
                 .onEvent({type: 'open', payload: error});
@@ -85,17 +89,22 @@ export default class Raket extends Component {
     }
 
     close = () => {
+        this.log('Closing');
+
         let WS = this.state.WS;
         if (WS) {
-            WS.onclose = null;
             WS.close();
+            WS.onclose = () => {};
+
         }
         if (this.TIMEOUT_ID) {
             clearTimeout(this.TIMEOUT_ID);
+
         }
 
         this.timeoutInterval = 1000;
         this.setState({status: 'closed', WS: null});
+
     }
 
     tryToReconnect = closeReason => {
@@ -103,10 +112,10 @@ export default class Raket extends Component {
             ? this.timeoutInterval * 2
             : this.timeoutInterval;
 
-        this.log(`Websocket connection closed (${closeReason}). Reopening the connection in ${this.timeoutInterval / 1000} seconds ...`);
+        this.log(`Websocket connection closed (${JSON.stringify(closeReason)}). Reopening the connection in ${this.timeoutInterval / 1000} seconds ...`);
 
         this.TIMEOUT_ID = setTimeout(() => {
-            this.setup();
+            this.setup(this.props.url);
         }, this.timeoutInterval);
     }
 
