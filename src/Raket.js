@@ -121,11 +121,9 @@ export default class Raket extends Component {
 
     renderIndicatorIcon = () => {
         let {status} = this.state;
-
-        return (
-            <div
-                className={`RaketIndicator --status-${status} ${this.props.className}`}
-                style={this.props.style || {
+        const style = this.props.style
+            ? this.props.style
+            : {
                 backgroundColor: this.statusColors[status],
                 borderRadius: '50%',
                 bottom: '20px',
@@ -134,13 +132,18 @@ export default class Raket extends Component {
                 position: 'absolute',
                 zIndex: '5000',
                 width: '30px'
-            }}></div>
+            };
+
+        return (
+            <div
+                className={`RaketIndicator --status-${status} ${this.props.className}`}
+                style={style}></div>
         );
     }
 
     render() {
         if (!this.props.showIndicator) {
-            return '';
+            return null;
         }
 
         return this.renderIndicatorIcon();

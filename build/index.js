@@ -496,11 +496,12 @@ var Raket = function (_Component) {
             error: 'red'
         }, _this.log = function (message) {
             if (_this.props.shouldLog) {
-                console.log('Raket | at :  ' + new Date().toLocaleTimeString() + ' | ' + message);
+                console.log('Raket | at :  ' + new Date().toLocaleTimeString() + ' | ' + JSON.stringify(message));
             }
-        }, _this.setup = function () {
+        }, _this.setup = function (url) {
+            _this.log('Setting up');
             _this.setState({
-                WS: new WebSocket(_this.props.url)
+                WS: new WebSocket(url)
             }, function () {
                 _this.setupLifecycle();
             });
@@ -508,39 +509,43 @@ var Raket = function (_Component) {
             var WS = _this.state.WS;
 
             WS.onopen = function () {
-                _this.log("WebSocket opening");
+                _this.log('WebSocket opening');
                 _this.setState({ status: 'open' });
                 _this.props.onEvent({ type: 'open' });
             };
 
             WS.onclose = function (closer) {
-                _this.log("WebSocket closing");
+                _this.log('WebSocket closing ' + JSON.stringify(closer));
                 _this.props.onEvent({ type: 'close' });
 
                 if (!_this.state.WS) {
                     // Closed manually
+                    _this.log('WebSocket closed manually');
                     return;
                 }
 
                 if (_this.props.shouldReconnect) {
+                    _this.log('WebSocket trying to reconnect');
                     _this.tryToReconnect(closer.reason);
                 }
             };
 
             WS.onmessage = function (message) {
-                _this.log("WebSocket got message : " + message);
+                _this.log('WebSocket got message : ' + JSON.stringify(message));
                 _this.props.onEvent({ type: 'open', payload: message });
             };
 
             WS.onerror = function (error) {
-                _this.log("WebSocket has error : " + error);
+                _this.log('WebSocket has error : ' + JSON.stringify(error));
                 _this.props.onEvent({ type: 'open', payload: error });
             };
         }, _this.close = function () {
+            _this.log('Closing');
+
             var WS = _this.state.WS;
             if (WS) {
-                WS.onclose = null;
                 WS.close();
+                WS.onclose = function () {};
             }
             if (_this.TIMEOUT_ID) {
                 clearTimeout(_this.TIMEOUT_ID);
@@ -551,34 +556,35 @@ var Raket = function (_Component) {
         }, _this.tryToReconnect = function (closeReason) {
             _this.timeoutInterval = _this.timeoutInterval !== 16000 ? _this.timeoutInterval * 2 : _this.timeoutInterval;
 
-            _this.log('Websocket connection closed (' + closeReason + '). Reopening the connection in ' + _this.timeoutInterval / 1000 + ' seconds ...');
+            _this.log('Websocket connection closed (' + JSON.stringify(closeReason) + '). Reopening the connection in ' + _this.timeoutInterval / 1000 + ' seconds ...');
 
             _this.TIMEOUT_ID = setTimeout(function () {
-                _this.setup();
+                _this.setup(_this.props.url);
             }, _this.timeoutInterval);
         }, _this.renderIndicatorIcon = function () {
             var status = _this.state.status;
 
+            var style = _this.props.style ? _this.props.style : {
+                backgroundColor: _this.statusColors[status],
+                borderRadius: '50%',
+                bottom: '20px',
+                height: '30px',
+                left: '20px',
+                position: 'absolute',
+                zIndex: '5000',
+                width: '30px'
+            };
 
             return _react2.default.createElement('div', {
                 className: 'RaketIndicator --status-' + status + ' ' + _this.props.className,
-                style: _this.props.style || {
-                    backgroundColor: _this.statusColors[status],
-                    borderRadius: '50%',
-                    bottom: '20px',
-                    height: '30px',
-                    left: '20px',
-                    position: 'absolute',
-                    zIndex: '5000',
-                    width: '30px'
-                } });
+                style: style });
         }, _temp), _possibleConstructorReturn(_this, _ret);
     }
 
     _createClass(Raket, [{
         key: 'componentDidMount',
         value: function componentDidMount() {
-            this.setup();
+            this.setup(this.props.url);
         }
     }, {
         key: 'componentWillUnmount',
@@ -589,15 +595,16 @@ var Raket = function (_Component) {
         key: 'componentWillUpdate',
         value: function componentWillUpdate(nextProps) {
             if (nextProps.url !== this.props.url) {
+                this.log('URL Changed');
                 this.close();
-                this.setup();
+                this.setup(nextProps.url);
             }
         }
     }, {
         key: 'render',
         value: function render() {
             if (!this.props.showIndicator) {
-                return '';
+                return null;
             }
 
             return this.renderIndicatorIcon();
